@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>将来機能 実装計画</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #5b677a;
+      --line: #d9e1ec;
+      --brand: #174f7c;
+      --accent: #1f7ab8;
+      --green: #147a3b;
+      --orange: #9a6200;
+      --red: #9b1c31;
+      --soft-blue: #edf6ff;
+      --soft-green: #eaf8ef;
+      --soft-warn: #fff6df;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Yu Gothic UI", "Meiryo", "Segoe UI", Arial, sans-serif;
+      line-height: 1.72;
+    }
+
+    header {
+      background: #123a5a;
+      color: #fff;
+      padding: 36px 28px;
+      border-bottom: 6px solid #45a3e5;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.3;
+    }
+
+    header p {
+      margin: 0;
+      color: #d9ecff;
+      max-width: 1000px;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    nav,
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      margin-bottom: 22px;
+    }
+
+    nav ul {
+      columns: 2;
+      padding-left: 22px;
+      margin-bottom: 0;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--line);
+      color: var(--brand);
+      font-size: 23px;
+    }
+
+    h3 {
+      margin: 20px 0 10px;
+      color: #24364b;
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #eef4fb;
+      color: #21384f;
+    }
+
+    code {
+      background: #eef2f7;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    pre {
+      background: #f8fafc;
+      color: #111827;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      line-height: 1.55;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 14px;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .note {
+      background: var(--soft-blue);
+      border: 1px solid #b9d9f5;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 14px 0;
+    }
+
+    .phase {
+      border-left: 6px solid var(--accent);
+      padding-left: 16px;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 9px;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--soft-green);
+      color: var(--green);
+      border: 1px solid #a8d9b7;
+    }
+
+    .flow {
+      display: grid;
+      gap: 10px;
+      max-width: 760px;
+      margin: 18px auto;
+    }
+
+    .flow div {
+      border: 1px solid #bdd2e6;
+      background: #f8fbff;
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .arrow {
+      text-align: center;
+      color: var(--accent);
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    @media (max-width: 800px) {
+      main {
+        padding: 14px;
+      }
+
+      nav ul {
+        columns: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>将来機能 実装計画</h1>
+    <p>middleware_rules.json を本番ソースに合わせて調整した後、タスク相関図、データフロー解析、業務処理ルート解析へ進めるための引き継ぎ資料です。</p>
+  </header>
+
+  <main>
+    <nav>
+      <h2>目次</h2>
+      <ul>
+        <li><a href="#purpose">目的</a></li>
+        <li><a href="#current">現状の前提</a></li>
+        <li><a href="#order">実装順序</a></li>
+        <li><a href="#task-graph">フェーズ3: タスク相関図</a></li>
+        <li><a href="#event-chain">フェーズ4: イベント別タスクチェーン</a></li>
+        <li><a href="#data-flow">フェーズ5: データフロー解析</a></li>
+        <li><a href="#business-route">フェーズ6: 業務処理ルート解析</a></li>
+        <li><a href="#report">フェーズ7: HTMLレポート</a></li>
+        <li><a href="#modules">推奨モジュール構成</a></li>
+        <li><a href="#handoff">最初の実装依頼</a></li>
+        <li><a href="#risks">リスクと対策</a></li>
+        <li><a href="#done">完了判定</a></li>
+      </ul>
+    </nav>
+
+    <section id="purpose">
+      <h2>目的</h2>
+      <p>
+        本資料は、Codex や GitHub Copilot が実装を引き継げるように、追加すべきCLI、DBテーブル、出力ファイル、処理方針、受け入れ条件を整理したものです。
+      </p>
+      <div class="flow">
+        <div>message_edges / data_accesses</div>
+        <p class="arrow">↓</p>
+        <div>タスク相関図</div>
+        <p class="arrow">↓</p>
+        <div>イベント別タスクチェーン</div>
+        <p class="arrow">↓</p>
+        <div>データフロー解析</div>
+        <p class="arrow">↓</p>
+        <div>業務処理ルート解析</div>
+      </div>
+    </section>
+
+    <section id="current">
+      <h2>現状の前提</h2>
+      <p>以下は実装済みです。</p>
+      <table>
+        <thead><tr><th>分類</th><th>実装済み項目</th></tr></thead>
+        <tbody>
+          <tr><td>基本解析</td><td>Cソース再帰走査、tree-sitter AST解析、関数・呼び出し・include・型・マクロ抽出、SQLite保存、Excel出力、DOT出力</td></tr>
+          <tr><td>ミドルウェア支援</td><td>suggest-rules、generate-rules-template、inspect-calls、list-rules、middleware、event-route</td></tr>
+          <tr><td>主要テーブル</td><td>middleware_calls、message_edges、data_accesses</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="order">
+      <h2>実装順序</h2>
+      <ol>
+        <li><strong>task-graph:</strong> まずタスク間の直接関係を固める。</li>
+        <li><strong>event-chain:</strong> イベント起点で複数段のタスクチェーンを追う。</li>
+        <li><strong>data-flow:</strong> データのread/writeをタスクや関数に紐付ける。</li>
+        <li><strong>business-route:</strong> タスクチェーンとデータフローを業務ルートとして統合する。</li>
+        <li><strong>report:</strong> HTMLでレビューしやすい資料にする。</li>
+      </ol>
+    </section>
+
+    <section id="task-graph" class="phase">
+      <h2>フェーズ3: タスク相関図 <span class="badge">最優先</span></h2>
+      <h3>追加CLI</h3>
+      <pre><code>python main.py --mode task-graph
+python main.py --mode task-graph --event イベントID</code></pre>
+      <h3>追加テーブル</h3>
+      <pre><code>task_edges:
+id, event_id, from_task, to_task, message_id, data_name,
+caller_function, file_id, line, confidence, edge_reason</code></pre>
+      <h3>出力</h3>
+      <pre><code>output/task_graph.xlsx
+output/task_graph.dot
+output/task_graph_<event_id>.xlsx
+output/task_graph_<event_id>.dot</code></pre>
+      <h3>受け入れ条件</h3>
+      <ul>
+        <li><code>message_edges</code> が空でもエラー終了しない。</li>
+        <li><code>UNKNOWN</code> を含む行も欠落しない。</li>
+        <li>event指定時に対象event_idだけ出る。</li>
+        <li>ExcelとDOTが出力される。</li>
+      </ul>
+    </section>
+
+    <section id="event-chain" class="phase">
+      <h2>フェーズ4: イベント別タスクチェーン</h2>
+      <h3>追加CLI</h3>
+      <pre><code>python main.py --mode event-chain --event イベントID</code></pre>
+      <h3>追加テーブル</h3>
+      <pre><code>event_chains:
+id, event_id, depth, route_order, from_task, to_task,
+message_id, data_name, caller_function, file_path, line,
+confidence, visited_key</code></pre>
+      <h3>処理方針</h3>
+      <ul>
+        <li><code>task_edges</code> からイベント別グラフを作る。</li>
+        <li>BFSを基本にして <code>depth</code> を付与する。</li>
+        <li><code>visited_key</code> でループを防止する。</li>
+      </ul>
+    </section>
+
+    <section id="data-flow" class="phase">
+      <h2>フェーズ5: データフロー解析</h2>
+      <h3>追加CLI</h3>
+      <pre><code>python main.py --mode data-flow
+python main.py --mode data-flow --event イベントID
+python main.py --mode data-flow --data データ名</code></pre>
+      <h3>追加テーブル</h3>
+      <pre><code>data_flow_edges:
+id, event_id, from_task, to_task, from_function, to_function,
+data_name, data_kind, direction, access_type, source_type,
+file_id, line, confidence, reason</code></pre>
+      <h3>関連付け</h3>
+      <table>
+        <thead><tr><th>由来</th><th>作り方</th></tr></thead>
+        <tbody>
+          <tr><td>MESSAGE</td><td><code>message_edges.data_name</code> から SEND / RECEIVE を作る。</td></tr>
+          <tr><td>FILE</td><td><code>file_write</code> と <code>file_read</code> を同じ <code>data_name</code> でつなぐ。</td></tr>
+          <tr><td>DB</td><td><code>db_write</code> と <code>db_read</code> を同じ <code>data_name</code> でつなぐ。</td></tr>
+          <tr><td>SHARED</td><td><code>shared_write</code> と <code>shared_read</code> を同じ <code>data_name</code> でつなぐ。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="business-route" class="phase">
+      <h2>フェーズ6: 業務処理ルート解析</h2>
+      <h3>追加CLI</h3>
+      <pre><code>python main.py --mode business-route --event イベントID</code></pre>
+      <h3>追加テーブル</h3>
+      <pre><code>business_routes:
+id, event_id, route_order, depth, node_type, task_name,
+function_name, data_name, data_kind, action, next_task,
+file_path, line, confidence, reason</code></pre>
+      <h3>出力</h3>
+      <pre><code>output/business_route_<event_id>.xlsx
+output/business_route_<event_id>.dot
+output/business_route_<event_id>.html</code></pre>
+      <p>イベント、タスク、メッセージ、データアクセスを1つの表として統合し、現場レビューできる形にします。</p>
+    </section>
+
+    <section id="report" class="phase">
+      <h2>フェーズ7: HTMLレポート</h2>
+      <h3>追加CLI</h3>
+      <pre><code>python main.py --mode report --event イベントID</code></pre>
+      <h3>内容</h3>
+      <ul>
+        <li>イベント概要</li>
+        <li>タスク相関図</li>
+        <li>データフロー</li>
+        <li>業務処理ルート</li>
+        <li>根拠ソース、confidence、UNKNOWN一覧</li>
+      </ul>
+    </section>
+
+    <section id="modules">
+      <h2>推奨モジュール構成</h2>
+      <pre><code>analyzer/task_graph.py
+analyzer/event_chain.py
+analyzer/data_flow.py
+analyzer/business_route.py
+analyzer/report_writer.py</code></pre>
+      <p><code>main.py</code> にはCLI接続だけを追加し、解析ロジックは個別モジュールへ分離します。</p>
+    </section>
+
+    <section id="handoff">
+      <h2>最初の実装依頼</h2>
+      <p>最初はフェーズ3だけを依頼します。</p>
+      <pre><code>フェーズ3として task-graph モードを追加してください。
+
+要件:
+- python main.py --mode task-graph
+- python main.py --mode task-graph --event イベントID
+- message_edges から from_task -> to_task の task_edges を作成
+- UNKNOWN は除外しない
+- SQLiteに task_edges テーブルを作成
+- output/task_graph.xlsx と output/task_graph.dot を出力
+- event指定時は output/task_graph_<event_id>.xlsx と output/task_graph_<event_id>.dot を出力
+- message_edges が空でもエラー終了しない
+- py -3.13 -m py_compile で構文確認する</code></pre>
+    </section>
+
+    <section id="risks">
+      <h2>リスクと対策</h2>
+      <table>
+        <thead><tr><th>リスク</th><th>対策</th></tr></thead>
+        <tbody>
+          <tr><td>arg_indexが誤っている</td><td><code>inspect-calls</code> で実例確認し、少数ルールから始める。</td></tr>
+          <tr><td>UNKNOWNが多い</td><td>除外せず、ルール改善対象として出力に残す。</td></tr>
+          <tr><td>タスク名の粒度が合わない</td><td>後続でタスク名正規化ルールを追加する。</td></tr>
+          <tr><td>DOTが大きくなりすぎる</td><td>event指定、data指定、depth制限を追加する。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="done">
+      <h2>完了判定</h2>
+      <ul>
+        <li>イベントIDを指定して、タスク間の起動関係が確認できる。</li>
+        <li>イベントに関係するデータのread/write候補が確認できる。</li>
+        <li>業務処理ルートとして、イベント、タスク、メッセージ、データアクセスが1つの表で確認できる。</li>
+        <li>すべての出力に根拠ファイル、行番号、confidenceが残る。</li>
+        <li>UNKNOWNや低confidenceがレビュー対象として見える。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
