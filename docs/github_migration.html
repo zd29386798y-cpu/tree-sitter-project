@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GitHub移行手順 - tree-sitter C解析マップ生成ツール</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #5b677a;
+      --line: #d9e1ec;
+      --brand: #174f7c;
+      --accent: #1f7ab8;
+      --warn-bg: #fff6df;
+      --warn-line: #e2bd6c;
+      --ok-bg: #eaf8ef;
+      --ok: #157a3a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Yu Gothic UI", "Meiryo", "Segoe UI", Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    header {
+      background: #123a5a;
+      color: #fff;
+      padding: 34px 28px;
+      border-bottom: 6px solid #45a3e5;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.3;
+    }
+
+    header p {
+      margin: 0;
+      color: #d9ecff;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    section,
+    nav {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      margin-bottom: 22px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--line);
+      color: var(--brand);
+      font-size: 23px;
+    }
+
+    h3 {
+      margin: 18px 0 10px;
+      color: #24364b;
+      font-size: 18px;
+    }
+
+    nav ul {
+      columns: 2;
+      padding-left: 22px;
+      margin-bottom: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef4fb;
+      color: #21384f;
+    }
+
+    code {
+      background: #eef2f7;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    pre {
+      background: #f8fafc;
+      color: #111827;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      line-height: 1.55;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 14px;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .warning,
+    .check {
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 14px 0;
+      border: 1px solid;
+    }
+
+    .warning {
+      background: var(--warn-bg);
+      border-color: var(--warn-line);
+    }
+
+    .check {
+      background: var(--ok-bg);
+      border-color: #a8d9b7;
+    }
+
+    @media (max-width: 800px) {
+      main {
+        padding: 14px;
+      }
+
+      nav ul {
+        columns: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>GitHub移行手順</h1>
+    <p>tree-sitter C解析マップ生成ツールをGitHubへ公開し、別PCへ移行するための手順書です。</p>
+  </header>
+
+  <main>
+    <nav>
+      <h2>目次</h2>
+      <ul>
+        <li><a href="#before">GitHubへ上げる前の確認</a></li>
+        <li><a href="#clean">clean-projectの実行</a></li>
+        <li><a href="#remove">実ソース由来の痕跡削除対象</a></li>
+        <li><a href="#gitignore">.gitignoreの意味</a></li>
+        <li><a href="#push">GitHubへpushする手順</a></li>
+        <li><a href="#clone">別PCでcloneする手順</a></li>
+        <li><a href="#venv">Python 3.13仮想環境作成手順</a></li>
+        <li><a href="#install-online">オンライン環境でのインストール</a></li>
+        <li><a href="#install-offline">オフライン環境でのインストール</a></li>
+        <li><a href="#verify">動作確認コマンド</a></li>
+        <li><a href="#notes">注意事項</a></li>
+      </ul>
+    </nav>
+
+    <section id="before">
+      <h2>GitHubへ上げる前の確認</h2>
+      <p>
+        GitHubへ公開する前に、現場ソース由来の解析結果が残っていないことを確認します。
+        解析成果物には、実ソースのパス、関数名、イベント名、データ名、呼び出し内容が含まれる場合があります。
+      </p>
+      <div class="warning">
+        <strong>重要:</strong> <code>samples/sample.c</code>、<code>docs/index.html</code>、ソースコード、README、ルールJSONは削除しません。
+        削除するのは解析成果物とPythonキャッシュです。
+      </div>
+      <table>
+        <thead>
+          <tr><th>確認項目</th><th>見るポイント</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>解析成果物</td><td><code>output</code> 配下にDB、Excel、DOT、CSVが残っていないか。</td></tr>
+          <tr><td>Pythonキャッシュ</td><td><code>__pycache__</code> が残っていないか。</td></tr>
+          <tr><td>説明資料</td><td>実ソースの具体的なパスや解析結果を貼り付けていないか。</td></tr>
+          <tr><td>ルールJSON</td><td>公開してよい関数名、イベント名、データ名だけが残っているか。</td></tr>
+        </tbody>
+      </table>
+      <div class="warning">
+        <strong>ルールJSONの注意:</strong> 実ソースから生成した <code>middleware_rules.local.json</code> と
+        <code>middleware_rules.template.local.json</code> はGitHubに上げないでください。
+        公開用の <code>middleware_rules.json</code> は空ルール、または公開可能なサンプルだけにしてください。
+      </div>
+    </section>
+
+    <section id="clean">
+      <h2>clean-projectの実行</h2>
+      <p>GitHub公開前または他PC移行前に、以下を実行します。</p>
+      <pre><code>python main.py --mode clean-project</code></pre>
+      <p>
+        このコマンドは削除対象一覧を表示したうえで、解析成果物とPythonキャッシュを削除します。
+      </p>
+    </section>
+
+    <section id="remove">
+      <h2>実ソース由来の痕跡削除対象</h2>
+      <table>
+        <thead>
+          <tr><th>対象</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>output/*.db</code></td><td>SQLite DBには解析した実ソース由来の情報が含まれる。</td></tr>
+          <tr><td><code>output/*.xlsx</code></td><td>Excelには関数名、呼び出し、イベント、データアクセス候補が含まれる。</td></tr>
+          <tr><td><code>output/*.dot</code></td><td>DOTには関数呼び出し関係が含まれる。</td></tr>
+          <tr><td><code>output/*.csv</code></td><td>CSV出力がある場合、解析結果を含む可能性がある。</td></tr>
+          <tr><td><code>output/*.json</code></td><td>出力用JSONを作った場合、解析結果を含む可能性がある。</td></tr>
+          <tr><td><code>__pycache__/</code></td><td>Python実行時のキャッシュ。公開には不要。</td></tr>
+        </tbody>
+      </table>
+      <div class="check">
+        <strong>残すもの:</strong> <code>samples/sample.c</code>、<code>docs/index.html</code>、<code>docs/github_migration.html</code>、
+        <code>main.py</code>、<code>analyzer/</code>、<code>README.md</code>、<code>middleware_rules.json</code>、
+        <code>middleware_rules.template.json</code>、<code>middleware_rules.example.json</code> は削除対象ではありません。
+        ただし、これらは空またはサンプルのみの内容にしてください。
+      </div>
+    </section>
+
+    <section id="gitignore">
+      <h2>.gitignoreの意味</h2>
+      <p>
+        <code>.gitignore</code> は、Gitに登録しないファイルを指定するための設定です。
+        このプロジェクトでは、Pythonキャッシュ、仮想環境、解析成果物、ログ、一時ファイル、IDE設定、Windows固有ファイルを除外します。
+      </p>
+      <table>
+        <thead>
+          <tr><th>分類</th><th>除外例</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Python</td><td><code>__pycache__/</code>, <code>*.pyc</code></td><td>自動生成されるため。</td></tr>
+          <tr><td>仮想環境</td><td><code>.venv/</code>, <code>venv/</code></td><td>PCごとに作り直すため。</td></tr>
+          <tr><td>解析成果物</td><td><code>output/*.db</code>, <code>output/*.xlsx</code>, <code>output/*.dot</code>, <code>output/*.csv</code>, <code>output/*.json</code></td><td>実ソース由来の情報を含む可能性があるため。</td></tr>
+          <tr><td>ローカルルール</td><td><code>middleware_rules.local.json</code>, <code>middleware_rules.template.local.json</code></td><td>実ソースから生成した関数名、イベント名、タスク名を含む可能性があるため。</td></tr>
+          <tr><td>ログ・一時ファイル</td><td><code>*.log</code>, <code>*.tmp</code></td><td>作業中に生成されるため。</td></tr>
+          <tr><td>IDE</td><td><code>.vscode/</code>, <code>.idea/</code></td><td>個人環境依存のため。</td></tr>
+          <tr><td>Windows</td><td><code>Thumbs.db</code>, <code>Desktop.ini</code></td><td>OSが生成するため。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="push">
+      <h2>GitHubへpushする手順</h2>
+      <p>Gitが利用できる環境で、以下の順に実行します。</p>
+      <pre><code>git init
+git status
+python main.py --mode clean-project
+git status
+git add .
+git commit -m "Initial public version"
+git branch -M main
+git remote add origin https://github.com/USER/REPOSITORY.git
+git push -u origin main</code></pre>
+      <div class="warning">
+        <strong>注意:</strong> <code>git add .</code> の前に <code>git status</code> を確認し、解析成果物が含まれていないことを確認してください。
+      </div>
+    </section>
+
+    <section id="clone">
+      <h2>別PCでcloneする手順</h2>
+      <pre><code>git clone https://github.com/USER/REPOSITORY.git
+cd REPOSITORY</code></pre>
+      <p>clone後、Python 3.13の仮想環境を作成して依存ライブラリをインストールします。</p>
+      <p>
+        現場環境でミドルウェアルールを調整する場合は、<code>middleware_rules.example.json</code> または
+        <code>middleware_rules.template.json</code> をコピーして <code>middleware_rules.json</code> を作成し、
+        ローカルで編集してください。
+      </p>
+      <pre><code>copy middleware_rules.example.json middleware_rules.json
+notepad middleware_rules.json</code></pre>
+    </section>
+
+    <section id="venv">
+      <h2>Python 3.13仮想環境作成手順</h2>
+      <pre><code>py -3.13 -m venv .venv
+.venv\Scripts\activate
+python --version
+python -m pip install --upgrade pip</code></pre>
+      <p><code>python --version</code> でPython 3.13系が表示されることを確認してください。</p>
+    </section>
+
+    <section id="install-online">
+      <h2>オンライン環境での pip install</h2>
+      <pre><code>pip install -r requirements.txt</code></pre>
+      <p>インターネット接続がある場合は、PyPIから必要ライブラリを取得します。</p>
+    </section>
+
+    <section id="install-offline">
+      <h2>オフライン環境での wheelhouse インストール</h2>
+      <p>事前に <code>offline_packages/wheelhouse</code> が用意されている場合は、以下を実行します。</p>
+      <pre><code>pip install --no-index --find-links offline_packages/wheelhouse -r requirements.txt</code></pre>
+      <p>
+        wheelはPythonバージョンやOSに依存します。Python 3.13用のwheelを使う場合は、移行先PCでもPython 3.13を使用してください。
+      </p>
+    </section>
+
+    <section id="verify">
+      <h2>動作確認コマンド</h2>
+      <pre><code>python main.py --mode ast --src samples
+python main.py --mode scan --src samples
+python main.py --mode analyze --src samples
+python main.py --mode export
+python main.py --mode graph</code></pre>
+      <p>サンプルで動作確認してから、必要に応じて実ソースを解析してください。</p>
+    </section>
+
+    <section id="notes">
+      <h2>注意事項</h2>
+      <ul>
+        <li>GitHub公開前に <code>python main.py --mode clean-project</code> を実行してください。</li>
+        <li><code>output</code> 配下の解析成果物はGit管理しないでください。</li>
+        <li>実ソースの具体的なパスや解析結果をREADMEやHTMLに貼り付けないでください。</li>
+        <li>実ソースから生成した <code>middleware_rules.local.json</code> はGitHubに上げないでください。</li>
+        <li>GitHub公開用の <code>middleware_rules.json</code> は空、または公開可能なサンプルだけにしてください。</li>
+        <li>ルール調整後のファイルはローカル管理とし、公開前に内容を見直してください。</li>
+        <li>オフライン移行では、移行先Pythonのバージョンとwheelhouseの対応を確認してください。</li>
+        <li>まず <code>samples</code> で動作確認してから実ソース解析へ進んでください。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tree-sitter C解析マップ生成ツール 説明資料</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #5b677a;
+      --line: #d9e1ec;
+      --brand: #1667a8;
+      --brand-dark: #0f4977;
+      --ok: #16803c;
+      --warn: #9a6200;
+      --todo: #9b1c31;
+      --soft-blue: #eaf4ff;
+      --soft-green: #eaf8ef;
+      --soft-warn: #fff5df;
+      --soft-red: #fff0f2;
+      --code: #111827;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Yu Gothic UI", "Meiryo", "Segoe UI", Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    header {
+      background: #123a5a;
+      color: #fff;
+      padding: 36px 28px;
+      border-bottom: 6px solid #45a3e5;
+    }
+
+    header h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      line-height: 1.3;
+    }
+
+    header p {
+      margin: 0;
+      color: #d9ecff;
+      max-width: 980px;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    nav {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 22px;
+    }
+
+    nav h2 {
+      margin-top: 0;
+    }
+
+    nav ul {
+      columns: 2;
+      padding-left: 22px;
+      margin-bottom: 0;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 22px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: var(--brand-dark);
+      font-size: 23px;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      margin: 20px 0 10px;
+      color: #24364b;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 8px 0 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      background: #fff;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #eef4fb;
+      color: #21384f;
+      font-weight: 700;
+    }
+
+    code {
+      background: #eef2f7;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    pre {
+      background: #f8fafc;
+      color: #111827;
+      border: 1px solid #cbd5e1;
+      padding: 14px 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      line-height: 1.55;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 14px;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .note,
+    .warning {
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 14px 0;
+      border: 1px solid;
+    }
+
+    .note {
+      background: var(--soft-blue);
+      border-color: #b9d9f5;
+    }
+
+    .warning {
+      background: var(--soft-warn);
+      border-color: #e5bf70;
+    }
+
+    .status {
+      display: inline-block;
+      min-width: 72px;
+      text-align: center;
+      border-radius: 999px;
+      padding: 2px 9px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .done {
+      background: var(--soft-green);
+      color: var(--ok);
+      border: 1px solid #a8d9b7;
+    }
+
+    .partial {
+      background: var(--soft-warn);
+      color: var(--warn);
+      border: 1px solid #e5bf70;
+    }
+
+    .todo {
+      background: var(--soft-red);
+      color: var(--todo);
+      border: 1px solid #efb5bf;
+    }
+
+    .flow {
+      display: grid;
+      gap: 10px;
+      max-width: 720px;
+      margin: 18px auto;
+    }
+
+    .flow-step {
+      border: 1px solid #bdd2e6;
+      background: #f8fbff;
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .flow-arrow {
+      text-align: center;
+      color: var(--brand);
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .mini-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfdff;
+    }
+
+    .mini-card h3 {
+      margin-top: 0;
+    }
+
+    @media (max-width: 800px) {
+      main {
+        padding: 14px;
+      }
+
+      nav ul {
+        columns: 1;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>tree-sitter C言語解析マップ生成ツール 説明資料</h1>
+    <p>大規模Cソースを構文解析し、関数・呼び出し・型・マクロ・ミドルウェア連携をSQLiteとExcelで確認するための現場向け資料です。</p>
+  </header>
+
+  <main>
+    <nav>
+      <h2>目次</h2>
+      <ul>
+        <li><a href="#overview">概要</a></li>
+        <li><a href="#purpose">このツールの目的</a></li>
+        <li><a href="#map">全体機能マップ</a></li>
+        <li><a href="#can-do">現在できること</a></li>
+        <li><a href="#cannot-do">まだできないこと</a></li>
+        <li><a href="#structure">ファイル構造</a></li>
+        <li><a href="#roles">各ファイルの役割</a></li>
+        <li><a href="#commands">コマンド一覧</a></li>
+        <li><a href="#basic-flow">基本的な使用手順</a></li>
+        <li><a href="#middleware-flow">現場でのミドルウェアルール調整手順</a></li>
+        <li><a href="#outputs">出力ファイル一覧</a></li>
+        <li><a href="#tables">SQLiteテーブル一覧</a></li>
+        <li><a href="#progress">現在の進捗状況</a></li>
+        <li><a href="#next">今後の進め方</a></li>
+        <li><a href="#cleanup">GitHub公開前クリーンアップ</a></li>
+        <li><a href="#notes">注意事項・制限事項</a></li>
+      </ul>
+    </nav>
+
+    <section id="overview">
+      <h2>概要</h2>
+      <p>
+        このツールは、C言語ソースをtree-sitterで解析し、関数一覧、include一覧、関数呼び出し一覧、
+        構造体・typedef・enum・マクロ一覧をSQLite DBに保存する解析マップ生成ツールです。
+      </p>
+      <p>
+        フェーズ2では、関数呼び出し一覧をもとにミドルウェア関数を抽出し、タスク間メッセージ連携
+        とデータアクセス解析の土台を作ります。
+      </p>
+    </section>
+
+    <section id="purpose">
+      <h2>このツールの目的</h2>
+      <ul>
+        <li>大規模Cソースの構造を、手作業より短時間で把握する。</li>
+        <li>関数定義、関数呼び出し、include、型、マクロを一覧化する。</li>
+        <li>SQLite DBとして保存し、再検索や後続解析に使える形にする。</li>
+        <li>Excelで現場メンバーが確認しやすい資料を出す。</li>
+        <li>ミドルウェア関数呼び出しから、イベント、タスク、データアクセスの関係を育てる。</li>
+      </ul>
+    </section>
+
+    <section id="map">
+      <h2>全体機能マップ</h2>
+      <div class="flow" aria-label="全体機能マップ">
+        <div class="flow-step">Cソース</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">tree-sitter解析</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">SQLite DB化</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">Excel出力 / DOT出力</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">ミドルウェア関数抽出</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">message_edges / data_accesses</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">イベント別ルート確認</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">将来：タスク相関図 / データフロー解析 / 業務処理ルート解析</div>
+      </div>
+    </section>
+
+    <section id="can-do">
+      <h2>現在できること</h2>
+      <div class="grid">
+        <div class="mini-card">
+          <h3>基本解析</h3>
+          <ul>
+            <li>Cソースとヘッダの再帰走査</li>
+            <li>tree-sitterによるAST解析</li>
+            <li>関数、呼び出し、include、型、マクロの抽出</li>
+            <li>SQLite DB保存</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h3>出力</h3>
+          <ul>
+            <li>Excel出力</li>
+            <li>関数呼び出しDOT出力</li>
+            <li>候補関数の集計Excel</li>
+            <li>イベント別ルートExcel</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h3>ミドルウェア解析</h3>
+          <ul>
+            <li>ルール候補抽出</li>
+            <li>ルールテンプレート生成</li>
+            <li>有効ルール一覧表示</li>
+            <li>呼び出し実例確認</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h3>確認支援</h3>
+          <ul>
+            <li>引数分割結果の確認</li>
+            <li>message_edgesの確認</li>
+            <li>data_accessesの確認</li>
+            <li>イベントID別の最小ルート表示</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="cannot-do">
+      <h2>まだできないこと</h2>
+      <ul>
+        <li>タスク相関図の自動生成</li>
+        <li>イベントを起点とした複数タスクチェーンの自動追跡</li>
+        <li>データフロー図の自動生成</li>
+        <li>関数ポインタ呼び出しの完全解決</li>
+        <li>マクロ展開後の完全解析</li>
+        <li><code>#ifdef</code> 条件の完全評価</li>
+        <li>皮サブ関数の完全自動判定</li>
+      </ul>
+    </section>
+
+    <section id="structure">
+      <h2>ファイル構造</h2>
+      <pre><code>C:\Projects\tree-sitter-Project
+├─ main.py
+├─ config.py
+├─ middleware_rules.json
+├─ middleware_rules.template.json
+├─ README.md
+├─ analyzer
+│  ├─ __init__.py
+│  ├─ parser_c.py
+│  ├─ source_scanner.py
+│  ├─ extractor.py
+│  ├─ db_writer.py
+│  └─ middleware.py
+├─ samples
+│  └─ sample.c
+├─ output
+│  ├─ c_analysis.db
+│  ├─ *.xlsx
+│  └─ call_graph.dot
+└─ docs
+   └─ index.html</code></pre>
+    </section>
+
+    <section id="roles">
+      <h2>各ファイルの役割</h2>
+      <table>
+        <thead>
+          <tr><th>ファイル</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>main.py</code></td><td>CLI入口。各モードを受け取り、解析、出力、ミドルウェア支援処理を呼び出す。</td></tr>
+          <tr><td><code>config.py</code></td><td>出力先、DBパス、除外フォルダ、解析対象拡張子などの設定。</td></tr>
+          <tr><td><code>middleware_rules.json</code></td><td>現場で調整するミドルウェア関数抽出ルール。</td></tr>
+          <tr><td><code>middleware_rules.template.json</code></td><td>候補Excelから生成される初期ルールテンプレート。初期状態では全ルール無効。</td></tr>
+          <tr><td><code>README.md</code></td><td>コマンドと基本説明。</td></tr>
+          <tr><td><code>analyzer/parser_c.py</code></td><td>tree-sitter Cパーサ生成、ソース読み込み、ASTテキスト出力。</td></tr>
+          <tr><td><code>analyzer/source_scanner.py</code></td><td><code>.c</code> / <code>.h</code> の再帰走査と除外フォルダ処理。</td></tr>
+          <tr><td><code>analyzer/extractor.py</code></td><td>ASTから関数、呼び出し、include、型、マクロを抽出。</td></tr>
+          <tr><td><code>analyzer/db_writer.py</code></td><td>SQLiteテーブル作成、データ保存、Excel出力、DOT出力。</td></tr>
+          <tr><td><code>analyzer/middleware.py</code></td><td>ルール候補抽出、テンプレート生成、ミドルウェア解析、イベントルート確認。</td></tr>
+          <tr><td><code>samples/sample.c</code></td><td>最小動作確認用サンプルCソース。</td></tr>
+          <tr><td><code>output/</code></td><td>DB、Excel、DOTなどの生成物を保存。</td></tr>
+          <tr><td><code>docs/index.html</code></td><td>本説明資料。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="commands">
+      <h2>コマンド一覧</h2>
+      <pre><code>python main.py --mode ast --src samples
+python main.py --mode scan --src "C:\Path\To\Source"
+python main.py --mode analyze --src "C:\Path\To\Source"
+python main.py --mode export
+python main.py --mode graph
+python main.py --mode suggest-rules
+python main.py --mode generate-rules-template
+python main.py --mode list-rules
+python main.py --mode inspect-calls --name 関数名
+python main.py --mode middleware
+python main.py --mode event-route --event イベントID
+python main.py --mode clean-project</code></pre>
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>機能</th><th>主な出力・確認ポイント</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ast</code></td><td>指定ソースのtree-sitter ASTを標準出力に表示する。</td><td>パーサが動くか、サンプルCが読めるかを最初に確認する。</td></tr>
+          <tr><td><code>scan</code></td><td>指定フォルダ配下の <code>.c</code> / <code>.h</code> を再帰検索する。</td><td>解析対象ファイル数と除外フォルダの効き方を確認する。</td></tr>
+          <tr><td><code>analyze</code></td><td>Cソースを解析し、関数・呼び出し・include・型・マクロをSQLiteへ保存する。</td><td><code>output/c_analysis.db</code> を作成する。以降の処理の土台。</td></tr>
+          <tr><td><code>export</code></td><td>SQLite DBの内容をExcelへ出力する。</td><td><code>functions.xlsx</code>、<code>calls.xlsx</code>、<code>message_edges.xlsx</code> などを確認する。</td></tr>
+          <tr><td><code>graph</code></td><td>関数呼び出し関係をDOT形式で出力する。</td><td><code>output/call_graph.dot</code> を生成する。</td></tr>
+          <tr><td><code>suggest-rules</code></td><td><code>calls</code> を集計し、ミドルウェア候補関数を抽出する。</td><td><code>callee_summary.xlsx</code> と <code>middleware_rule_candidates.xlsx</code> を確認する。</td></tr>
+          <tr><td><code>generate-rules-template</code></td><td>候補ExcelからルールテンプレートJSONを作成する。</td><td><code>middleware_rules.template.json</code> を生成する。初期状態は全候補無効。</td></tr>
+          <tr><td><code>list-rules</code></td><td>現在有効な <code>middleware_rules.json</code> のルールだけを一覧表示する。</td><td><code>active_middleware_rules.xlsx</code> で有効ルールを確認する。</td></tr>
+          <tr><td><code>inspect-calls</code></td><td>指定関数の呼び出し実例と引数分割結果を表示する。</td><td><code>arg0</code> から <code>arg5</code> を見て、各 <code>arg_index</code> を決める。</td></tr>
+          <tr><td><code>middleware</code></td><td>有効ルールに一致した呼び出しを抽出し、連携候補テーブルを作る。</td><td><code>middleware_calls</code>、<code>message_edges</code>、<code>data_accesses</code> を作成する。</td></tr>
+          <tr><td><code>event-route</code></td><td>指定イベントIDのメッセージ連携と関連データアクセスを表示する。</td><td><code>event_route_イベントID.xlsx</code> でイベント別の最小ルートを確認する。</td></tr>
+          <tr><td><code>clean-project</code></td><td>GitHub公開前や他PC移行前に、現場ソース由来の解析成果物を削除する。</td><td><code>output</code> 配下の <code>*.db</code>、<code>*.xlsx</code>、<code>*.dot</code>、<code>*.csv</code> と <code>__pycache__</code> を削除する。<code>samples</code> と <code>docs</code> は残す。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="basic-flow">
+      <h2>基本的な使用手順</h2>
+      <pre><code>python main.py --mode analyze --src "C:\Path\To\Source"
+python main.py --mode export
+python main.py --mode suggest-rules
+python main.py --mode generate-rules-template
+copy middleware_rules.template.json middleware_rules.json
+notepad middleware_rules.json
+python main.py --mode list-rules
+python main.py --mode inspect-calls --name 関数名
+python main.py --mode middleware
+python main.py --mode export
+python main.py --mode event-route --event イベントID
+
+# GitHub公開前・他PC移行前だけ実行
+python main.py --mode clean-project</code></pre>
+      <table>
+        <thead>
+          <tr><th>順番</th><th>作業</th><th>役割・確認内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><code>analyze</code></td><td>実ソース全体を解析し、SQLite DBを作る。ここで得た <code>calls</code> が後続解析の入力になる。</td></tr>
+          <tr><td>2</td><td><code>export</code></td><td>基本解析結果をExcel化し、関数数・呼び出し数・型情報などの全体感を確認する。</td></tr>
+          <tr><td>3</td><td><code>suggest-rules</code></td><td>実際に出現している呼び出し先名から、ミドルウェア候補を洗い出す。</td></tr>
+          <tr><td>4</td><td><code>generate-rules-template</code></td><td>候補をJSONテンプレート化する。すべて無効状態なので、誤抽出を防げる。</td></tr>
+          <tr><td>5</td><td><code>copy</code></td><td>テンプレートを実運用ファイル <code>middleware_rules.json</code> としてコピーする。</td></tr>
+          <tr><td>6</td><td><code>notepad</code></td><td>現場知識でルールを編集する。まず少数だけ <code>enabled: true</code> にする。</td></tr>
+          <tr><td>7</td><td><code>list-rules</code></td><td>有効化したルールだけを一覧化し、意図しないルールが有効になっていないか確認する。</td></tr>
+          <tr><td>8</td><td><code>inspect-calls</code></td><td>対象関数の実際の引数並びを見て、<code>event_arg_index</code> や <code>data_arg_index</code> を調整する。</td></tr>
+          <tr><td>9</td><td><code>middleware</code></td><td>調整済みルールでミドルウェア呼び出しを抽出する。</td></tr>
+          <tr><td>10</td><td><code>export</code></td><td><code>message_edges.xlsx</code> と <code>data_accesses.xlsx</code> を出力し、抽出結果を確認する。</td></tr>
+          <tr><td>11</td><td><code>event-route</code></td><td>イベントID単位でタスク間連携の見え方を確認し、次のルール改善に戻す。</td></tr>
+          <tr><td>12</td><td><code>clean-project</code></td><td>GitHub公開前や他PC移行前に実行する。現場ソース由来のDB、Excel、DOT、CSVを削除し、公開してよいファイルだけを残す。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="middleware-flow">
+      <h2>現場でのミドルウェアルール調整手順</h2>
+      <ol>
+        <li><code>suggest-rules</code> で候補を出す。</li>
+        <li><code>generate-rules-template</code> でテンプレートを作る。</li>
+        <li><code>middleware_rules.json</code> を編集する。</li>
+        <li>まず少数の関数だけ <code>enabled: true</code> にする。</li>
+        <li><code>inspect-calls</code> で引数位置を確認する。</li>
+        <li><code>event_arg_index</code> / <code>to_task_arg_index</code> / <code>from_task_arg_index</code> / <code>data_arg_index</code> を調整する。</li>
+        <li><code>middleware</code> を実行する。</li>
+        <li><code>message_edges.xlsx</code> / <code>data_accesses.xlsx</code> を確認する。</li>
+        <li>問題なければ対象関数を増やす。</li>
+      </ol>
+      <div class="note">
+        ルールは最初から広く有効化せず、少数の関数で引数位置と抽出結果を確認してから広げるのが安全です。
+      </div>
+    </section>
+
+    <section id="outputs">
+      <h2>出力ファイル一覧</h2>
+      <table>
+        <thead>
+          <tr><th>出力ファイル</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>output/c_analysis.db</code></td><td>解析結果を保存するSQLite DB。</td></tr>
+          <tr><td><code>output/functions.xlsx</code></td><td>関数定義一覧。</td></tr>
+          <tr><td><code>output/calls.xlsx</code></td><td>関数呼び出し一覧。</td></tr>
+          <tr><td><code>output/includes.xlsx</code></td><td>include一覧。</td></tr>
+          <tr><td><code>output/macros.xlsx</code></td><td>マクロ一覧。</td></tr>
+          <tr><td><code>output/types.xlsx</code></td><td>struct / union / enum / typedef一覧。</td></tr>
+          <tr><td><code>output/call_graph.dot</code></td><td>関数呼び出しグラフ。</td></tr>
+          <tr><td><code>output/callee_summary.xlsx</code></td><td>呼び出し先関数名の件数集計。</td></tr>
+          <tr><td><code>output/middleware_rule_candidates.xlsx</code></td><td>ミドルウェアルール候補。</td></tr>
+          <tr><td><code>middleware_rules.template.json</code></td><td>候補から生成したルールテンプレート。</td></tr>
+          <tr><td><code>output/active_middleware_rules.xlsx</code></td><td>有効ルール一覧。</td></tr>
+          <tr><td><code>output/inspect_calls_関数名.xlsx</code></td><td>指定関数の呼び出し実例と引数分割結果。</td></tr>
+          <tr><td><code>output/middleware_calls.xlsx</code></td><td>ルールに一致したミドルウェア呼び出し。</td></tr>
+          <tr><td><code>output/message_edges.xlsx</code></td><td>イベント・タスク・データのメッセージ連携候補。</td></tr>
+          <tr><td><code>output/data_accesses.xlsx</code></td><td>ファイル、DB、共有データアクセス候補。</td></tr>
+          <tr><td><code>output/event_route_イベントID.xlsx</code></td><td>イベントID別の最小ルート確認結果。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="tables">
+      <h2>SQLiteテーブル一覧</h2>
+      <table>
+        <thead>
+          <tr><th>テーブル</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>files</code></td><td>解析対象ファイルのパス、ファイル名、拡張子、行数、サイズ。</td></tr>
+          <tr><td><code>functions</code></td><td>関数名、開始行、終了行、シグネチャ。</td></tr>
+          <tr><td><code>calls</code></td><td>呼び出し元、呼び出し先、行番号、呼び出しテキスト。</td></tr>
+          <tr><td><code>includes</code></td><td>include文とinclude名。</td></tr>
+          <tr><td><code>structs</code></td><td>struct / union / enumの名前、種別、行範囲。</td></tr>
+          <tr><td><code>typedefs</code></td><td>typedef名、対象テキスト、行番号。</td></tr>
+          <tr><td><code>macros</code></td><td>マクロ名、マクロ本文、行番号。</td></tr>
+          <tr><td><code>middleware_calls</code></td><td>ルールに一致した呼び出し、抽出引数、confidence。</td></tr>
+          <tr><td><code>message_edges</code></td><td>event_id、from_task、to_task、data_nameなどのメッセージ連携候補。</td></tr>
+          <tr><td><code>data_accesses</code></td><td>file/db/sharedのread/writeアクセス候補。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="progress">
+      <h2>現在の進捗状況</h2>
+      <table>
+        <thead>
+          <tr><th>状態</th><th>項目</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="status done">完了</span></td><td>Cソース再帰走査</td><td><code>.c</code> / <code>.h</code> を再帰検索できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>tree-sitter AST解析</td><td>ASTを生成し、テキスト出力できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>functions / calls / includes / structs / typedefs / macros 抽出</td><td>基本構造を抽出できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>SQLite保存</td><td>解析結果をDB化できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>Excel出力</td><td>主要テーブルをExcel化できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>関数呼び出しDOT出力</td><td>関数呼び出し関係をDOT出力できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>suggest-rules</td><td>解析DBからルール候補を抽出できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>generate-rules-template</td><td>候補Excelから無効状態のルールテンプレートを生成できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>middleware_rules.json 読み込み</td><td>enabledの有無を考慮してルールを読み込める。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>middleware_calls / message_edges / data_accesses テーブル作成</td><td>フェーズ2用テーブルを作成できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>inspect-calls</td><td>候補関数の呼び出し実例と引数分割を確認できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>event-route</td><td>イベントID別に最小ルートを確認できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>list-rules</td><td>有効ルールを一覧確認できる。</td></tr>
+          <tr><td><span class="status done">完了</span></td><td>clean-project</td><td>GitHub公開前に現場ソース由来の解析成果物を削除できる。</td></tr>
+          <tr><td><span class="status partial">一部完了</span></td><td>データアクセス関連付け</td><td>関数名やdata_name一致によるMVP関連付け。完全なデータフロー追跡は未実装。</td></tr>
+          <tr><td><span class="status todo">未完了</span></td><td>タスク相関図の自動生成</td><td>イベントやタスクの関係図は今後の拡張。</td></tr>
+          <tr><td><span class="status todo">未完了</span></td><td>イベントを起点とした複数タスクチェーンの自動追跡</td><td>複数段のイベント伝播解析は未実装。</td></tr>
+          <tr><td><span class="status todo">未完了</span></td><td>データフロー図の自動生成</td><td>データのread/write連鎖の図示は未実装。</td></tr>
+          <tr><td><span class="status todo">未完了</span></td><td>関数ポインタ呼び出しの完全解決</td><td>静的な完全解決は未対応。</td></tr>
+          <tr><td><span class="status todo">未完了</span></td><td>マクロ展開後の完全解析</td><td>プリプロセッサ展開は未対応。</td></tr>
+          <tr><td><span class="status todo">未完了</span></td><td>#ifdef 条件の完全評価</td><td>ビルド条件ごとの完全評価は未対応。</td></tr>
+          <tr><td><span class="status todo">未完了</span></td><td>皮サブ関数の完全自動判定</td><td>現場ルールによる段階的な育成が必要。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="next">
+      <h2>今後の進め方</h2>
+      <ol>
+        <li>小規模ソースで <code>analyze</code> から <code>export</code> まで確認する。</li>
+        <li>実ソース全体を解析し、<code>calls.xlsx</code> と <code>callee_summary.xlsx</code> を確認する。</li>
+        <li>ミドルウェア候補を少数選び、<code>inspect-calls</code> で引数位置を確定する。</li>
+        <li><code>middleware_rules.json</code> に有効ルールを少しずつ増やす。</li>
+        <li><code>message_edges.xlsx</code> と <code>data_accesses.xlsx</code> を見て、現場知識で補正する。</li>
+        <li>イベントID別に <code>event-route</code> を確認し、タスク起動相関の候補を洗い出す。</li>
+        <li>次フェーズでタスク相関図、データフロー図、業務処理ルート解析へ拡張する。</li>
+      </ol>
+    </section>
+
+    <section id="cleanup">
+      <h2>GitHub公開前クリーンアップ</h2>
+      <p>
+        <code>clean-project</code> は、GitHub公開前や他PCへ移行する前に、現場ソース由来の解析結果だけを安全に削除するためのモードです。
+        解析結果には実ソースのパス、関数名、呼び出し内容、イベント名、データ名などが含まれる場合があるため、公開前に削除してください。
+      </p>
+
+      <pre><code>python main.py --mode clean-project</code></pre>
+
+      <table>
+        <thead>
+          <tr><th>分類</th><th>対象</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>削除する</td><td><code>output/*.db</code></td><td>SQLite DB。実ソース由来の解析結果が含まれる。</td></tr>
+          <tr><td>削除する</td><td><code>output/*.xlsx</code></td><td>Excel出力。関数名、呼び出し、イベント、データアクセス情報が含まれる。</td></tr>
+          <tr><td>削除する</td><td><code>output/*.dot</code></td><td>関数呼び出しグラフ。関数名や関係情報が含まれる。</td></tr>
+          <tr><td>削除する</td><td><code>output/*.csv</code></td><td>CSV出力がある場合は削除対象。</td></tr>
+          <tr><td>削除する</td><td><code>__pycache__</code></td><td>Python実行時に生成されるキャッシュ。プロジェクト配下から再帰削除する。</td></tr>
+          <tr><td>残す</td><td><code>samples/sample.c</code></td><td>動作確認用サンプル。現場ソースではないため残す。</td></tr>
+          <tr><td>残す</td><td><code>docs/index.html</code></td><td>説明資料。公開・移行時にも残す。</td></tr>
+          <tr><td>残す</td><td><code>main.py</code> / <code>analyzer/</code> / <code>README.md</code></td><td>ツール本体。削除対象外。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="warning">
+        <strong>注意:</strong> <code>clean-project</code> は実行すると解析成果物を削除します。GitHub公開前、他PC移行前、または解析結果を作り直したい場合に実行してください。
+      </div>
+    </section>
+
+    <section id="notes">
+      <h2>注意事項・制限事項</h2>
+      <div class="warning">
+        解析結果は100%正解ではありません。現場ルールを育てながら、段階的に信頼度を上げる前提です。
+      </div>
+      <ul>
+        <li>tree-sitterはプリプロセッサ展開を行わない。</li>
+        <li>マクロ経由呼び出しは取れない場合がある。</li>
+        <li>関数ポインタ呼び出しは完全には解決しない。</li>
+        <li>Excelは1セル32767文字制限がある。</li>
+        <li>DBにはExcelより詳細な情報が残る場合がある。</li>
+        <li>解析結果は100%正解ではなく、現場ルールで育てる前提。</li>
+        <li>まずは小規模ソースで確認してから全体解析する。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

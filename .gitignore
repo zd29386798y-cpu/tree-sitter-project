@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+
+# Analysis outputs
+output/*.db
+output/*.xlsx
+output/*.dot
+output/*.csv
+output/*.json
+
+# Local middleware rules generated from real source
+middleware_rules.local.json
+middleware_rules.template.local.json
+
+# Temporary / logs
+*.log
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+Desktop.ini

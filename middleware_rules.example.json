@@ -1,0 +1,20 @@
+{
+  "message_send": [
+    {
+      "enabled": false,
+      "match_type": "exact",
+      "name": "SAMPLE_SendMessage",
+      "event_arg_index": 0,
+      "to_task_arg_index": 1,
+      "data_arg_index": 2,
+      "note": "sample only"
+    }
+  ],
+  "message_recv": [],
+  "file_read": [],
+  "file_write": [],
+  "db_read": [],
+  "db_write": [],
+  "shared_read": [],
+  "shared_write": []
+}
