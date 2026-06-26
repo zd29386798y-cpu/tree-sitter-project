@@ -16,6 +16,11 @@ from analyzer.middleware import (
     list_active_rules,
     suggest_rules,
 )
+from analyzer.task_graph import build_task_edges
+from analyzer.event_chain import build_event_chain
+from analyzer.data_flow import build_data_flow
+from analyzer.business_route import build_business_route
+from analyzer.report_writer import generate_report
 from analyzer.parser_c import ast_to_text, parse_file
 from analyzer.source_scanner import scan_sources
 from config import BASE_DIR, COMMIT_INTERVAL, DB_PATH, EXCLUDE_DIRS, OUTPUT_DIR
@@ -115,6 +120,37 @@ def list_rules() -> None:
     print(f"Active rules exported: count={result['count']}, output={result['output_path']}")
 
 
+def task_graph(event: str | None) -> None:
+    result = build_task_edges(DB_PATH, event_id=event)
+    print(f"Task graph completed: count={result['count']}, excel={result['excel_path']}, dot={result['dot_path']}")
+
+
+def event_chain(event: str | None) -> None:
+    if not event:
+        raise SystemExit("--event is required for --mode event-chain")
+    result = build_event_chain(event, DB_PATH)
+    print(f"Event chain completed: count={result['count']}, excel={result['excel_path']}, dot={result['dot_path']}")
+
+
+def data_flow(event: str | None, data_name: str | None) -> None:
+    result = build_data_flow(DB_PATH, event_id=event, data_name=data_name)
+    print(f"Data flow completed: count={result['count']}, excel={result['excel_path']}, dot={result['dot_path']}")
+
+
+def business_route(event: str | None) -> None:
+    if not event:
+        raise SystemExit("--event is required for --mode business-route")
+    result = build_business_route(event, DB_PATH)
+    print(f"Business route completed: count={result['count']}, excel={result['excel_path']}, dot={result['dot_path']}, html={result['html_path']}")
+
+
+def report(event: str | None) -> None:
+    if not event:
+        raise SystemExit("--event is required for --mode report")
+    result = generate_report(event, DB_PATH)
+    print(f"Report completed: html={result['html_path']}")
+
+
 def is_under_workspace(path: Path) -> bool:
     workspace = BASE_DIR.resolve()
     try:
@@ -192,6 +228,11 @@ def build_parser() -> argparse.ArgumentParser:
             "generate-rules-template",
             "inspect-calls",
             "event-route",
+            "task-graph",
+            "event-chain",
+            "data-flow",
+            "business-route",
+            "report",
             "list-rules",
             "clean-project",
             "middleware",
@@ -202,7 +243,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--src", default="samples", help="Source file or directory for ast/scan/analyze modes")
     parser.add_argument("--name", help="Callee function name for inspect-calls mode")
-    parser.add_argument("--event", help="Event ID for event-route mode")
+    parser.add_argument("--event", help="Event ID for event-route / task-graph / event-chain / data-flow / business-route / report modes")
+    parser.add_argument("--data", help="Data name for data-flow mode")
     parser.add_argument(
         "--exclude",
         nargs="*",
@@ -236,6 +278,16 @@ def main() -> None:
         inspect_named_calls(args.name)
     elif args.mode == "event-route":
         show_event_route(args.event)
+    elif args.mode == "task-graph":
+        task_graph(args.event)
+    elif args.mode == "event-chain":
+        event_chain(args.event)
+    elif args.mode == "data-flow":
+        data_flow(args.event, args.data)
+    elif args.mode == "business-route":
+        business_route(args.event)
+    elif args.mode == "report":
+        report(args.event)
     elif args.mode == "list-rules":
         list_rules()
     elif args.mode == "clean-project":
